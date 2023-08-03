@@ -1,0 +1,87 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "start main",
+            "type": "python",
+            "request": "launch",
+            "program": "helloworld/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "$PYTHONPATH:${workspaceFolder}:${workspaceFolder}/nextstep"
+            },
+            "justMyCode": true
+        },
+        {
+            "name": "start celery worker",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "-A",
+                "nextstep.celery_app",
+                "worker",
+                "-l",
+                "INFO",
+            ]
+        },
+        {
+            "name": "background start celery worker",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "multi",
+                "start",
+                "w1",
+                "-A",
+                "nextstep.celery_app",
+                "-l",
+                "INFO",
+                "-c",
+                "1",
+                "--pidfile=pid/%n.pid",
+                "--logfile=log/%n%I.log"
+            ]
+        },
+        {
+            "name": "background stop celery worker",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "multi",
+                "stopwait",
+                "w1",
+                "-A",
+                "nextstep.celery_app",
+                "-l",
+                "INFO",
+                "-c",
+                "1",
+                "--pidfile=pid/%n.pid",
+                "--logfile=log/%n%I.log"
+            ]
+        }
+    ]
+}
