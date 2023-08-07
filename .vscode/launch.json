@@ -19,7 +19,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "env": {
-                "PYTHONPATH": "$PYTHONPATH:${workspaceFolder}:${workspaceFolder}/nextstep"
+                "PYTHONPATH": "$PYTHONPATH:${workspaceFolder}:${workspaceFolder}/nextstep:${workspaceFolder}/userguide"
             },
             "justMyCode": true
         },

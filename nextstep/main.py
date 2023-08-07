@@ -57,4 +57,4 @@ print(chain_result.get())
 
 
 # chord
-# group then
+# group then chain
