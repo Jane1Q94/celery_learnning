@@ -36,7 +36,25 @@ you can override this setting by specify the `default_retry_delay` parameter to 
 ![retry](./screenshots/retry.png)
 default retry count is 3, see below:
 ![retry count](./screenshots/retry2.png)
+A value of None about `max_retries` will disable the retry limit and the task will retry for ever until it succeeds.
 
+### backends
+- rpc backends: `rpc://`. it doesn't actually store the states, but rather sends them as messages.
+- database result backed: polling the database for new states is expensive and some databases use a default transcation isolation level that isn't suiteable for polling tables for changes.
+
+### states
+- pending
+- started: need enabled by config
+- success:
+- failure
+- retry
+- revoked
+- custom states
+
+### exceptions
+- Ignore: force the worker to ignore the task. This means that no state will be recorder for the task. This can be used if you want to implement custom revoke-like functionality, or manually store the result of a task.
+- Regect: This won't have any effect unless `Task.acks_late` is enabled. redelivered the rejected messages to another queue.
+- Retry
  ### parametes
  - acks_late: acknowledge the message after the task returns
  - bind
@@ -46,9 +64,13 @@ default retry count is 3, see below:
  - retry_kwargs: retry parameters, eg: `{'max_retries': 5}`
  ![auto retry](./screenshots/retry3.png)
  - retry_backoff=True: use exponential backoff to avoid overwhelming the service
+ - rate_limit: this is a per worker instance rate limit, and not a global rate limit. To enforce a global rate limit, you must restrict to a given queue.
 
  ### settings
  - task_reject_on_worker_lost: you really want to be redelivered the messages if the child process is be killed by system or calling sys.exit()
 
 ### attention
 - i/o tasks need add timeout because a task indefinitely may eventually stop the worker instance from doing any other work.
+- backends use resources to store and transmit results. To ensure that resources are released, you must eventually call `get()` or `gorget()` on EVERY AsyncResult instance returned after calling a task.
+- A task is not instantiated for every request, but is registered in the task registry as a global instance. This means that the `__init__` constructor will only be called once per process, and that the task class is semantically(语义上) closer to an Actor.
+

@@ -1,3 +1,4 @@
+import time
 from userguide.application.celery_app import app
 
 
@@ -60,3 +61,39 @@ class CustomException(Exception):
 @app.task(bind=True, autoretry_for=(CustomException, ), retry_kwargs={'max_retries': 5, 'countdown': 5})
 def test_auto_retry(self):
     raise CustomException("custom exception")
+
+
+@app.task(bind=True)
+def test_custom_state(self, filenames):
+    for i, file in enumerate(filenames):
+        if not self.request.called_directly:
+            self.update_state(state="PROGRESS", meta={
+                'current': i,
+                'current_file': file,
+                'total': len(filenames)
+            })
+        time.sleep(4)
+        logger.info(f'{self}')
+
+
+class BadPickleCustomException(Exception):
+    def __init__(self, status_code) -> None:
+        self.status_code = status_code
+
+# always in pending state
+
+
+@app.task(serializer="pickle")
+def test_bad_pickle_exception():
+    raise BadPickleCustomException(400)
+
+
+class NormalPickleCustomException(Exception):
+    def __init__(self, status_code):
+        self.status_code = status_code
+        super(NormalPickleCustomException, self).__init__(status_code)
+
+
+@app.task(serializer="pickle")
+def test_normal_pickle_exception():
+    raise NormalPickleCustomException(400)
