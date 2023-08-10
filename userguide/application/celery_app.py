@@ -1,4 +1,4 @@
-from celery import Celery
+from celery import Celery, Task
 
 
 class MyCelery(Celery):
@@ -8,5 +8,17 @@ class MyCelery(Celery):
         return f'1q94-{task_name}'
 
 
+class BaseTask(Task):
+    def __init__(self) -> None:
+        print("start init")
+
+    @property
+    def payload(self):
+        return {
+            "db_connection": "this is a db connection"
+        }
+
+
 app = MyCelery("app", broker="redis://localhost",
-               backend="redis://localhost", include=["userguide.task.tasks"])
+               backend="redis://localhost", include=["userguide.task.tasks"],
+               task_cls="userguide.application.celery_app:BaseTask")

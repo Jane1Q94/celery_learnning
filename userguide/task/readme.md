@@ -52,22 +52,33 @@ A value of None about `max_retries` will disable the retry limit and the task wi
 - custom states
 
 ### exceptions
-- Ignore: force the worker to ignore the task. This means that no state will be recorder for the task. This can be used if you want to implement custom revoke-like functionality, or manually store the result of a task.
-- Regect: This won't have any effect unless `Task.acks_late` is enabled. redelivered the rejected messages to another queue.
+- Ignore: force the worker to ignore the task. This means that no state will be recorder for the task, but the message is still acknowledged(removed from queue). This can be used if you want to implement custom revoke-like functionality, or manually store the result of a task.
+- Regect: Rejecting a message has the same effect as acking it, but some brokers may implement additional functionality that can be used. This won't have any effect unless `Task.acks_late` is enabled. redelivered the rejected messages to another queue.
 - Retry
- ### parametes
- - acks_late: acknowledge the message after the task returns
- - bind
- - base: base class of the task
- - default_retry_delay: retry delay
- - autoretry_for: retry for a particular exception
- - retry_kwargs: retry parameters, eg: `{'max_retries': 5}`
- ![auto retry](./screenshots/retry3.png)
- - retry_backoff=True: use exponential backoff to avoid overwhelming the service
- - rate_limit: this is a per worker instance rate limit, and not a global rate limit. To enforce a global rate limit, you must restrict to a given queue.
 
- ### settings
- - task_reject_on_worker_lost: you really want to be redelivered the messages if the child process is be killed by system or calling sys.exit()
+### base task class
+- Instantiation only once
+- APP-wide usage: `app=Celery(task_cls='your.module.path:BaseClass')`
+![global base task init](./screenshots/basetask.png)
+- handlers: before_start / after_return / on_failure / on_retry / on_success
+- base requests: `on_timeout` and `on_failure` process in main process not prefork processes
+![base request detect error](./screenshots/baserequests.png)
+
+### best practices
+- ignore_result if you don't care the results of a task, as storing results wastes time and resources. ignore_result in apply > ignore_result in app.task > task_ignore_result setting
+### parametes
+- acks_late: acknowledge the message after the task returns
+- bind
+- base: base class of the task
+- default_retry_delay: retry delay
+- autoretry_for: retry for a particular exception
+- retry_kwargs: retry parameters, eg: `{'max_retries': 5}`
+![auto retry](./screenshots/retry3.png)
+- retry_backoff=True: use exponential backoff to avoid overwhelming the service
+- rate_limit: this is a per worker instance rate limit, and not a global rate limit. To enforce a global rate limit, you must restrict to a given queue.
+
+### settings
+- task_reject_on_worker_lost: you really want to be redelivered the messages if the child process is be killed by system or calling sys.exit()
 
 ### attention
 - i/o tasks need add timeout because a task indefinitely may eventually stop the worker instance from doing any other work.

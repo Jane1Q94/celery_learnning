@@ -97,3 +97,115 @@ class NormalPickleCustomException(Exception):
 @app.task(serializer="pickle")
 def test_normal_pickle_exception():
     raise NormalPickleCustomException(400)
+
+
+# custom base task class
+from celery import Task
+
+
+class DatabaseTask(Task):
+    """every task instance can use the same db connection
+    """
+    _db = None
+
+    @property
+    def db(self):
+        if self._db is None:
+            self._db = {
+                "db": "this is a db connnection"
+            }
+        return self._db
+
+
+@app.task(base=DatabaseTask, bind=True)
+def test_task_base(self: Task):
+    print(self.db)
+    return self.db
+
+
+@app.task(bind=True)
+def test_global_task_base(self: Task):
+    print(self.payload)
+    return self.payload
+
+
+# test task handlers
+
+class BaseTaskHandlers(Task):
+    # the return value of this handler is ignored.
+    def before_start(self, task_id, args, kwargs):
+        print(
+            f'self: {self}, task_id: {task_id}, args: {args}, kwargs: {kwargs}')
+
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        print(f'self: {self}, status: {status}: retval: {retval}, taskid: {task_id}, args: {args}, kwargs: {kwargs}, einfo: {einfo}')
+
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        print('task is failure')
+        print(
+            f'self: {self}, exc: {exc}, taskid: {task_id}, args: {args}, kwargs: {kwargs}, einfo: {einfo}')
+
+    def on_retry(self, exc, task_id, args, kwargs, einfo):
+        print('task is on retry')
+
+    def on_success(self, retval, task_id, args, kwargs):
+        print('task is success')
+
+
+@app.task(base=BaseTaskHandlers, bind=True)
+def test_task_handler_on_success(self):
+    print('task execute success')
+    return 'success'
+
+
+# custom request
+from celery.worker.request import Request
+
+
+class CustomRequest(Request):
+    def on_timeout(self, soft, timeout):
+        super().on_timeout(soft, timeout)
+        if not soft:
+            logger.warning(
+                f'A hard timeout was enforced for task {self.task.name}'
+            )
+
+    def on_failure(self, exc_info, send_failed_event=True, return_ok=False):
+        super().on_failure(exc_info, send_failed_event, return_ok)
+        logger.warning(f'Failure detected for task {self.task.name}')
+
+
+class BasetaskCustomRequest(Task):
+    Request = CustomRequest
+
+
+@app.task(base=BasetaskCustomRequest, bind=True)
+def test_custom_request(self):
+    import requests
+    requests.get("http://www.bai.com")
+
+
+@app.task
+def test_sync_call_children():
+    print('parent task execute start')
+    time.sleep(1)
+    children_task.delay().get(disable_sync_subtasks=False)
+    print('parent task execute done.')
+
+# will failed:
+# RuntimeError: Never call result.get() within a task!
+
+
+@app.task
+def test_async_call_children():
+    print('parent task execute start')
+    time.sleep(1)
+    children_task.delay().get(disable_sync_subtasks=True)
+    print('parent task execute done.')
+
+
+@app.task
+def children_task():
+    print('children task execute start.')
+    time.sleep(10)
+    print('child task execute done')
