@@ -209,3 +209,33 @@ def children_task():
     print('children task execute start.')
     time.sleep(10)
     print('child task execute done')
+
+
+@app.task
+def test_link(x, y):
+    return x + y
+
+
+@app.task
+def test_link_error(*args, **kwargs):
+    print(f'args: {args}, kwargs: {kwargs}')
+
+
+@app.task(bind=True)
+def test_on_message(self, a, b):
+    time.sleep(1)
+    self.update_state(state="PROGRESS", meta={'progress': 50})
+    time.sleep(1)
+    self.update_state(state="PROGRESS", meta={'progress': 90})
+    time.sleep(1)
+    return f'success: {a} {b}'
+
+
+def on_message(body):
+    print(body)
+
+
+@app.task(bind=True)
+def test_retry_policy(self):
+    time.sleep(1)
+    raise CustomException("custom exception")
